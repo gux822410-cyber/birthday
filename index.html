@@ -60,27 +60,29 @@ canvas{
 <canvas id="c"></canvas>
 <div id="text"></div>
 
-<!-- 🎵 音乐 -->
-<audio id="bgm" preload="auto" loop></audio>
+<!-- 🎵 背景轻音乐 -->
+<audio id="bgm" loop preload="auto"></audio>
 
 <script>
-/* ================= 🎵 音乐 ================= */
-const musicList=[
-  "https://music.163.com/song/media/outer/url?id=1337065812.mp3",
-  "https://music.163.com/song/media/outer/url?id=409650631.mp3",
-  "https://music.163.com/song/media/outer/url?id=1374061026.mp3"
+/* ================= 🎵 随机轻音乐（稳定版） ================= */
+const musicList = [
+  "https://cdn.pixabay.com/download/audio/2021/09/06/audio_5e1b5b6e5d.mp3?filename=soft-piano-ambient-11057.mp3",
+  "https://cdn.pixabay.com/download/audio/2022/10/03/audio_4b1a6d1d88.mp3?filename=peaceful-piano-ambient-124998.mp3",
+  "https://cdn.pixabay.com/download/audio/2022/02/23/audio_3e2fbc1c6c.mp3?filename=gentle-acoustic-ambient-11390.mp3",
+  "https://cdn.pixabay.com/download/audio/2022/03/15/audio_53c0b0bb30.mp3?filename=happy-birthday-12684.mp3"
 ];
-const audio=document.getElementById("bgm");
-audio.src=musicList[Math.floor(Math.random()*musicList.length)];
 
-/* 手机端：点击后播放 */
+const audio = document.getElementById("bgm");
+audio.src = musicList[Math.floor(Math.random() * musicList.length)];
+
+/* 手机端：首次点击解锁播放 */
 function unlockMusic(){
   audio.play().catch(()=>{});
-  document.removeEventListener("click",unlockMusic);
-  document.removeEventListener("touchstart",unlockMusic);
+  document.removeEventListener("click", unlockMusic);
+  document.removeEventListener("touchstart", unlockMusic);
 }
-document.addEventListener("click",unlockMusic);
-document.addEventListener("touchstart",unlockMusic);
+document.addEventListener("click", unlockMusic);
+document.addEventListener("touchstart", unlockMusic);
 
 /* ================= 🎨 画布 ================= */
 const canvas=document.getElementById("c");
@@ -183,7 +185,7 @@ function draw(){
 }
 draw();
 
-/* ================= ⌨️ 打字机文字（修复版） ================= */
+/* ================= ⌨️ 打字机文字 ================= */
 const textBox=document.getElementById("text");
 
 const lines=[
@@ -226,7 +228,7 @@ function startTyping(){
   typingTimer=setInterval(()=>{
     if(lineIndex>=renderedLines.length){
       clearInterval(typingTimer);
-      return; // ✅ 打完就停
+      return;
     }
 
     const line=renderedLines[lineIndex];
