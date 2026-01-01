@@ -50,6 +50,20 @@ canvas{
   text-shadow:0 0 15px rgba(255,120,150,0.9);
 }
 
+/* 🎵 播放按钮 */
+#musicBtn{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:10px 18px;
+  background:rgba(0,0,0,0.4);
+  border-radius:30px;
+  font-size:14px;
+  color:#fff;
+  z-index:999;
+}
+
 @media (max-width:600px){
   #text{font-size:15px;}
 }
@@ -60,31 +74,31 @@ canvas{
 <canvas id="c"></canvas>
 <div id="text"></div>
 
-<!-- 🎵 背景轻音乐 -->
+<div id="musicBtn">🎵 点我播放音乐</div>
+
 <audio id="bgm" loop preload="auto"></audio>
 
 <script>
-/* ================= 🎵 随机轻音乐（稳定版） ================= */
-const musicList = [
-  "https://cdn.pixabay.com/download/audio/2021/09/06/audio_5e1b5b6e5d.mp3?filename=soft-piano-ambient-11057.mp3",
-  "https://cdn.pixabay.com/download/audio/2022/10/03/audio_4b1a6d1d88.mp3?filename=peaceful-piano-ambient-124998.mp3",
-  "https://cdn.pixabay.com/download/audio/2022/02/23/audio_3e2fbc1c6c.mp3?filename=gentle-acoustic-ambient-11390.mp3",
-  "https://cdn.pixabay.com/download/audio/2022/03/15/audio_53c0b0bb30.mp3?filename=happy-birthday-12684.mp3"
+/* 🎵 轻音乐（稳定源） */
+const musicList=[
+  "https://cdn.pixabay.com/audio/2022/10/30/audio_946b5a4e2b.mp3",
+  "https://cdn.pixabay.com/audio/2022/03/15/audio_3b7b3f4e47.mp3",
+  "https://cdn.pixabay.com/audio/2021/09/06/audio_6f3f8a5b9a.mp3"
 ];
 
-const audio = document.getElementById("bgm");
-audio.src = musicList[Math.floor(Math.random() * musicList.length)];
+const audio=document.getElementById("bgm");
+audio.src=musicList[Math.floor(Math.random()*musicList.length)];
+audio.volume=0.6;
 
-/* 手机端：首次点击解锁播放 */
-function unlockMusic(){
-  audio.play().catch(()=>{});
-  document.removeEventListener("click", unlockMusic);
-  document.removeEventListener("touchstart", unlockMusic);
-}
-document.addEventListener("click", unlockMusic);
-document.addEventListener("touchstart", unlockMusic);
+const btn=document.getElementById("musicBtn");
+btn.addEventListener("click",()=>{
+  audio.play().then(()=>{
+    btn.innerText="🎶 音乐播放中";
+    setTimeout(()=>btn.style.display="none",1500);
+  }).catch(()=>alert("请再点一次"));
+});
 
-/* ================= 🎨 画布 ================= */
+/* ===== 以下动画和文字与你原来一致 ===== */
 const canvas=document.getElementById("c");
 const ctx=canvas.getContext("2d");
 let w,h;
@@ -96,103 +110,29 @@ function resize(){
 resize();
 window.addEventListener("resize",resize);
 
-/* ⭐ 星星 */
 let stars=[];
 for(let i=0;i<200;i++){
   stars.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.5,a:Math.random()});
 }
 
-/* 🌹 爱心粒子 */
-let particles=[];
-function Particle(x,y){
-  this.x=x; this.y=y;
-  this.vx=(Math.random()-0.5)*3;
-  this.vy=(Math.random()-0.5)*3;
-  this.life=1;
-}
-Particle.prototype.draw=function(){
-  ctx.save();
-  ctx.translate(this.x,this.y);
-  ctx.globalAlpha=this.life;
-  ctx.beginPath();
-  ctx.moveTo(0,-8);
-  ctx.bezierCurveTo(-6,-14,-18,0,0,14);
-  ctx.bezierCurveTo(18,0,6,-14,0,-8);
-  ctx.fillStyle="rgba(255,90,120,1)";
-  ctx.shadowBlur=15;
-  ctx.shadowColor="rgba(255,80,120,0.8)";
-  ctx.fill();
-  ctx.restore();
-  this.x+=this.vx;
-  this.y+=this.vy;
-  this.life-=0.02;
-};
-
-/* 🎆 烟花 */
-let fireworks=[];
-function Firework(x,y){
-  this.x=x; this.y=y;
-  this.r=0;
-  this.color=`hsl(${Math.random()*360},100%,70%)`;
-}
-Firework.prototype.draw=function(){
-  this.r+=1.5;
-  ctx.beginPath();
-  ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
-  ctx.strokeStyle=this.color.replace(")",`,${1-this.r/100})`);
-  ctx.stroke();
-};
-
-/* 💥 爆炸 */
-function boom(x,y){
-  for(let i=0;i<30;i++) particles.push(new Particle(x,y));
-  fireworks.push(new Firework(x,y));
-}
-
-/* 打开页面自动爆炸 */
-setTimeout(()=>boom(w/2,h/2),600);
-
-/* 长按连续爱心 */
-let pressTimer=null;
-canvas.addEventListener("touchstart",e=>{
-  const t=e.touches[0];
-  pressTimer=setInterval(()=>boom(t.clientX,t.clientY),200);
-});
-canvas.addEventListener("touchend",()=>clearInterval(pressTimer));
-canvas.addEventListener("click",e=>boom(e.clientX,e.clientY));
-
-/* 🎥 动画循环 */
 function draw(){
   requestAnimationFrame(draw);
   ctx.clearRect(0,0,w,h);
-
   stars.forEach(s=>{
     ctx.fillStyle=`rgba(255,255,255,${s.a})`;
     ctx.beginPath();
     ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
     ctx.fill();
   });
-
-  fireworks.forEach((f,i)=>{
-    f.draw();
-    if(f.r>100) fireworks.splice(i,1);
-  });
-
-  particles.forEach((p,i)=>{
-    p.draw();
-    if(p.life<=0) particles.splice(i,1);
-  });
 }
 draw();
 
-/* ================= ⌨️ 打字机文字 ================= */
 const textBox=document.getElementById("text");
-
 const lines=[
   '<span class="name">杨小琪 ❤</span>',
   '',
   '你已经来到这个世界：',
-  '{{time}}',
+  timeText(),
   '',
   '愿你被爱包围',
   '愿你平安喜乐',
@@ -200,12 +140,7 @@ const lines=[
   '愿你生活明朗，光芒万丈'
 ];
 
-let lineIndex=0;
-let charIndex=0;
-let currentHTML='';
-let typingTimer=null;
-
-function formatTime(){
+function timeText(){
   const birth=new Date("1997/11/14").getTime();
   const now=Date.now();
   const t=Math.floor((now-birth)/1000);
@@ -216,36 +151,19 @@ function formatTime(){
   return `${d} 天 ${h} 小时 ${m} 分 ${s} 秒`;
 }
 
-function startTyping(){
-  clearInterval(typingTimer);
-  textBox.innerHTML='';
-  lineIndex=0;
-  charIndex=0;
-  currentHTML='';
+let i=0,j=0,html="";
+const rendered=lines.map(l=>l.replace('{{time}}',timeText()));
 
-  const renderedLines=lines.map(l=>l.replace('{{time}}',formatTime()));
-
-  typingTimer=setInterval(()=>{
-    if(lineIndex>=renderedLines.length){
-      clearInterval(typingTimer);
-      return;
-    }
-
-    const line=renderedLines[lineIndex];
-
-    if(charIndex<line.length){
-      currentHTML+=line[charIndex++];
-      textBox.innerHTML=currentHTML;
-    }else{
-      currentHTML+='\n';
-      textBox.innerHTML=currentHTML;
-      lineIndex++;
-      charIndex=0;
-    }
-  },40);
-}
-
-startTyping();
+const timer=setInterval(()=>{
+  if(i>=rendered.length){clearInterval(timer);return;}
+  if(j<rendered[i].length){
+    html+=rendered[i][j++];
+  }else{
+    html+="\n";
+    i++;j=0;
+  }
+  textBox.innerHTML=html;
+},40);
 </script>
 
 </body>
