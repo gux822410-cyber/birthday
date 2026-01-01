@@ -53,15 +53,16 @@ canvas{
 /* 🎵 播放按钮 */
 #musicBtn{
   position:fixed;
-  bottom:20px;
+  bottom:30px;
   left:50%;
   transform:translateX(-50%);
-  padding:10px 18px;
-  background:rgba(0,0,0,0.4);
+  padding:12px 22px;
+  background:rgba(255,255,255,0.15);
+  border:1px solid rgba(255,255,255,0.3);
   border-radius:30px;
-  font-size:14px;
   color:#fff;
-  z-index:999;
+  font-size:14px;
+  backdrop-filter:blur(8px);
 }
 
 @media (max-width:600px){
@@ -69,36 +70,33 @@ canvas{
 }
 </style>
 </head>
+
 <body>
 
 <canvas id="c"></canvas>
 <div id="text"></div>
 
+<!-- 🎵 音乐 -->
+<audio id="bgm" loop preload="auto"></audio>
 <div id="musicBtn">🎵 点我播放音乐</div>
 
-<audio id="bgm" loop preload="auto"></audio>
-
 <script>
-/* 🎵 轻音乐（稳定源） */
+/* ================= 🎵 音乐 ================= */
 const musicList=[
-  "https://cdn.pixabay.com/audio/2022/10/30/audio_946b5a4e2b.mp3",
-  "https://cdn.pixabay.com/audio/2022/03/15/audio_3b7b3f4e47.mp3",
-  "https://cdn.pixabay.com/audio/2021/09/06/audio_6f3f8a5b9a.mp3"
+  "https://music.163.com/song/media/outer/url?id=1337065812.mp3",
+  "https://music.163.com/song/media/outer/url?id=409650631.mp3",
+  "https://music.163.com/song/media/outer/url?id=1374061026.mp3"
 ];
 
 const audio=document.getElementById("bgm");
 audio.src=musicList[Math.floor(Math.random()*musicList.length)];
-audio.volume=0.6;
 
-const btn=document.getElementById("musicBtn");
-btn.addEventListener("click",()=>{
-  audio.play().then(()=>{
-    btn.innerText="🎶 音乐播放中";
-    setTimeout(()=>btn.style.display="none",1500);
-  }).catch(()=>alert("请再点一次"));
+document.getElementById("musicBtn").addEventListener("click",()=>{
+  audio.play();
+  document.getElementById("musicBtn").style.display="none";
 });
 
-/* ===== 以下动画和文字与你原来一致 ===== */
+/* ================= 🎨 画布 ================= */
 const canvas=document.getElementById("c");
 const ctx=canvas.getContext("2d");
 let w,h;
@@ -110,60 +108,74 @@ function resize(){
 resize();
 window.addEventListener("resize",resize);
 
+/* ⭐ 星星 */
 let stars=[];
 for(let i=0;i<200;i++){
   stars.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.5,a:Math.random()});
 }
 
+/* 🌹 爱心粒子 */
+let particles=[];
+function Particle(x,y){
+  this.x=x; this.y=y;
+  this.vx=(Math.random()-0.5)*3;
+  this.vy=(Math.random()-0.5)*3;
+  this.life=1;
+}
+Particle.prototype.draw=function(){
+  ctx.save();
+  ctx.translate(this.x,this.y);
+  ctx.globalAlpha=this.life;
+  ctx.beginPath();
+  ctx.moveTo(0,-8);
+  ctx.bezierCurveTo(-6,-14,-18,0,0,14);
+  ctx.bezierCurveTo(18,0,6,-14,0,-8);
+  ctx.fillStyle="rgba(255,90,120,1)";
+  ctx.shadowBlur=15;
+  ctx.shadowColor="rgba(255,80,120,0.8)";
+  ctx.fill();
+  ctx.restore();
+  this.x+=this.vx;
+  this.y+=this.vy;
+  this.life-=0.02;
+};
+
+/* 🎆 点击爆炸 */
+function boom(x,y){
+  for(let i=0;i<30;i++) particles.push(new Particle(x,y));
+}
+canvas.addEventListener("click",e=>boom(e.clientX,e.clientY));
+
+/* 🎥 动画 */
 function draw(){
   requestAnimationFrame(draw);
   ctx.clearRect(0,0,w,h);
+
   stars.forEach(s=>{
     ctx.fillStyle=`rgba(255,255,255,${s.a})`;
     ctx.beginPath();
     ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
     ctx.fill();
   });
+
+  particles.forEach((p,i)=>{
+    p.draw();
+    if(p.life<=0) particles.splice(i,1);
+  });
 }
 draw();
 
+/* ⌨️ 文字 */
 const textBox=document.getElementById("text");
-const lines=[
-  '<span class="name">杨小琪 ❤</span>',
-  '',
-  '你已经来到这个世界：',
-  timeText(),
-  '',
-  '愿你被爱包围',
-  '愿你平安喜乐',
-  '愿你心有所向，万事无忧',
-  '愿你生活明朗，光芒万丈'
-];
+textBox.innerHTML=`<span class="name">杨小琪 ❤</span>
 
-function timeText(){
-  const birth=new Date("1997/11/14").getTime();
-  const now=Date.now();
-  const t=Math.floor((now-birth)/1000);
-  const d=Math.floor(t/86400);
-  const h=Math.floor(t%86400/3600);
-  const m=Math.floor(t%3600/60);
-  const s=t%60;
-  return `${d} 天 ${h} 小时 ${m} 分 ${s} 秒`;
-}
+你已经来到这个世界：
+10276 天
 
-let i=0,j=0,html="";
-const rendered=lines.map(l=>l.replace('{{time}}',timeText()));
-
-const timer=setInterval(()=>{
-  if(i>=rendered.length){clearInterval(timer);return;}
-  if(j<rendered[i].length){
-    html+=rendered[i][j++];
-  }else{
-    html+="\n";
-    i++;j=0;
-  }
-  textBox.innerHTML=html;
-},40);
+愿你被爱包围
+愿你平安喜乐
+愿你心有所向，万事无忧
+愿你生活明朗，光芒万丈`;
 </script>
 
 </body>
