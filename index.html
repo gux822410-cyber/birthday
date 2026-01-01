@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>生日快乐</title>
 
 <style>
@@ -20,6 +20,7 @@ body{
   animation:bgMove 15s ease infinite;
   color:#fff;
 }
+
 @keyframes bgMove{
   0%{background-position:0% 50%}
   50%{background-position:100% 50%}
@@ -42,11 +43,13 @@ canvas{
   line-height:1.9;
   pointer-events:none;
 }
+
 .name{
   font-size:22px;
   font-weight:bold;
   text-shadow:0 0 15px rgba(255,120,150,0.9);
 }
+
 @media (max-width:600px){
   #text{font-size:15px;}
 }
@@ -57,8 +60,8 @@ canvas{
 <canvas id="c"></canvas>
 <div id="text"></div>
 
-<!-- 🎵 音乐播放器 -->
-<audio id="bgm" loop preload="auto"></audio>
+<!-- 🎵 音乐 -->
+<audio id="bgm" preload="auto" loop></audio>
 
 <script>
 /* ================= 🎵 音乐 ================= */
@@ -70,19 +73,20 @@ const musicList=[
 const audio=document.getElementById("bgm");
 audio.src=musicList[Math.floor(Math.random()*musicList.length)];
 
-/* 手机端：首次交互播放 */
+/* 手机端：点击后播放 */
 function unlockMusic(){
-  audio.play();
-  document.removeEventListener("touchstart",unlockMusic);
+  audio.play().catch(()=>{});
   document.removeEventListener("click",unlockMusic);
+  document.removeEventListener("touchstart",unlockMusic);
 }
-document.addEventListener("touchstart",unlockMusic);
 document.addEventListener("click",unlockMusic);
+document.addEventListener("touchstart",unlockMusic);
 
 /* ================= 🎨 画布 ================= */
 const canvas=document.getElementById("c");
 const ctx=canvas.getContext("2d");
 let w,h;
+
 function resize(){
   w=canvas.width=window.innerWidth;
   h=canvas.height=window.innerHeight;
@@ -90,13 +94,13 @@ function resize(){
 resize();
 window.addEventListener("resize",resize);
 
-/* ✨ 星星 */
+/* ⭐ 星星 */
 let stars=[];
 for(let i=0;i<200;i++){
   stars.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.5,a:Math.random()});
 }
 
-/* 🌹 粒子 */
+/* 🌹 爱心粒子 */
 let particles=[];
 function Particle(x,y){
   this.x=x; this.y=y;
@@ -130,7 +134,7 @@ function Firework(x,y){
   this.color=`hsl(${Math.random()*360},100%,70%)`;
 }
 Firework.prototype.draw=function(){
-  this.r+=1.2;
+  this.r+=1.5;
   ctx.beginPath();
   ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
   ctx.strokeStyle=this.color.replace(")",`,${1-this.r/100})`);
@@ -139,7 +143,7 @@ Firework.prototype.draw=function(){
 
 /* 💥 爆炸 */
 function boom(x,y){
-  for(let i=0;i<25;i++) particles.push(new Particle(x,y));
+  for(let i=0;i<30;i++) particles.push(new Particle(x,y));
   fireworks.push(new Firework(x,y));
 }
 
@@ -153,10 +157,9 @@ canvas.addEventListener("touchstart",e=>{
   pressTimer=setInterval(()=>boom(t.clientX,t.clientY),200);
 });
 canvas.addEventListener("touchend",()=>clearInterval(pressTimer));
-
 canvas.addEventListener("click",e=>boom(e.clientX,e.clientY));
 
-/* 🎥 动画 */
+/* 🎥 动画循环 */
 function draw(){
   requestAnimationFrame(draw);
   ctx.clearRect(0,0,w,h);
@@ -180,46 +183,67 @@ function draw(){
 }
 draw();
 
-/* ⌨️ 打字机文字 */
+/* ================= ⌨️ 打字机文字（修复版） ================= */
 const textBox=document.getElementById("text");
-const baseText=`<span class="name">杨小琪 ❤</span>
 
-你已经来到这个世界：
-{{time}}
+const lines=[
+  '<span class="name">杨小琪 ❤</span>',
+  '',
+  '你已经来到这个世界：',
+  '{{time}}',
+  '',
+  '愿你被爱包围',
+  '愿你平安喜乐',
+  '愿你心有所向，万事无忧',
+  '愿你生活明朗，光芒万丈'
+];
 
-愿你被爱包围
-愿你平安喜乐
-愿你心有所向，万事无忧
-愿你生活明朗，光芒万丈字有惊喜）`;
+let lineIndex=0;
+let charIndex=0;
+let currentHTML='';
+let typingTimer=null;
 
-let index=0;
-function update(){
+function formatTime(){
   const birth=new Date("1997/11/14").getTime();
   const now=Date.now();
   const t=Math.floor((now-birth)/1000);
   const d=Math.floor(t/86400);
-  const h1=Math.floor(t%86400/3600);
+  const h=Math.floor(t%86400/3600);
   const m=Math.floor(t%3600/60);
   const s=t%60;
+  return `${d} 天 ${h} 小时 ${m} 分 ${s} 秒`;
+}
 
-  const text=baseText.replace("{{time}}",
-    `${d} 天 ${h1} 小时 ${m} 分 ${s} 秒`);
+function startTyping(){
+  clearInterval(typingTimer);
+  textBox.innerHTML='';
+  lineIndex=0;
+  charIndex=0;
+  currentHTML='';
 
-  index=0;
-  const timer=setInterval(()=>{
-    textBox.innerHTML=text.slice(0,index++);
-    if(index>text.length) clearInterval(timer);
+  const renderedLines=lines.map(l=>l.replace('{{time}}',formatTime()));
+
+  typingTimer=setInterval(()=>{
+    if(lineIndex>=renderedLines.length){
+      clearInterval(typingTimer);
+      return; // ✅ 打完就停
+    }
+
+    const line=renderedLines[lineIndex];
+
+    if(charIndex<line.length){
+      currentHTML+=line[charIndex++];
+      textBox.innerHTML=currentHTML;
+    }else{
+      currentHTML+='\n';
+      textBox.innerHTML=currentHTML;
+      lineIndex++;
+      charIndex=0;
+    }
   },40);
 }
-update();
-setInterval(update,1000);
 
-/* 点名字特效 */
-document.addEventListener("click",e=>{
-  if(e.target.classList.contains("name")){
-    boom(w/2,h/2);
-  }
-});
+startTyping();
 </script>
 
 </body>
